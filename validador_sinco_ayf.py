@@ -30,12 +30,23 @@ st.set_page_config(
 # sidebar y el contenido del inicio para que el panel aparezca completo al final.
 if st.session_state.get('etapa_sel') is None:
     st.markdown("""<style>
+    /* Sidebar oculto en la pantalla de inicio */
     [data-testid="stSidebar"] { display: none !important; }
     [data-testid="stSidebarNav"] { display: none !important; }
-    .main .block-container { max-width: 100% !important; padding-left: 2rem !important; padding-right: 2rem !important; }
-    /* Ocultar el contenido mientras se construye: se revela todo junto al final
-       de la pantalla de inicio para que no aparezca por pedazos (cuadro a cuadro) */
-    .main .block-container { visibility: hidden; }
+    [data-testid="stSidebarCollapsedControl"] { display: none !important; }
+    /* Contenido a todo el ancho */
+    .block-container { max-width: 100% !important; padding-left: 2rem !important; padding-right: 2rem !important; }
+    /* Ocultar el contenido mientras se construye el panel de inicio: se revela
+       todo junto al final. IMPORTANTE: se listan selectores para versiones
+       nuevas Y viejas de Streamlit ('.main' dejó de existir en versiones
+       recientes; ahora el contenedor es [data-testid="stMain"]). */
+    .block-container,
+    section.main .block-container,
+    [data-testid="stMain"] .block-container,
+    [data-testid="stMainBlockContainer"] { visibility: hidden; }
+    /* Matar el skeleton de carga y el indicador "Running" apenas llegue este CSS */
+    [data-testid="stAppSkeleton"] { display: none !important; }
+    [data-testid="stStatusWidget"] { visibility: hidden !important; }
     </style>""", unsafe_allow_html=True)
 
 import pandas as pd  # import pesado: después del primer render (ver nota arriba)
@@ -3361,7 +3372,7 @@ if not etapa_sel:
     st.markdown("""<style>
     [data-testid="stSidebar"] { display: none !important; }
     [data-testid="stSidebarNav"] { display: none !important; }
-    .main .block-container { max-width: 100% !important; padding-left: 2rem !important; padding-right: 2rem !important; }
+    .block-container { max-width: 100% !important; padding-left: 2rem !important; padding-right: 2rem !important; }
     </style>""", unsafe_allow_html=True)
     _saludo = f"¡Hola! Te damos la bienvenida, <b>{nombre_cliente}</b>" if nombre_cliente else "¡Hola! Te damos la bienvenida"
 
@@ -3522,7 +3533,14 @@ if not etapa_sel:
     # Contraparte del 'visibility:hidden' inyectado al inicio del script:
     # este CSS llega al navegador cuando ya se generó todo el panel de inicio.
     st.markdown("""<style>
-    .main .block-container { visibility: visible !important; animation: _panel_fadein 0.30s ease; }
+    /* (mismos selectores multi-versión que el bloque de ocultado) */
+    .block-container,
+    section.main .block-container,
+    [data-testid="stMain"] .block-container,
+    [data-testid="stMainBlockContainer"] {
+        visibility: visible !important;
+        animation: _panel_fadein 0.30s ease;
+    }
     @keyframes _panel_fadein { from { opacity: 0; } to { opacity: 1; } }
     </style>""", unsafe_allow_html=True)
     st.stop()
