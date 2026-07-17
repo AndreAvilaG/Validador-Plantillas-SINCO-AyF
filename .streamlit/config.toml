@@ -1,5 +1,5 @@
-toml[client]
-showSidebarNavigation = false
 
+[client]
+showSidebarNavigation = false
 [ui]
 hideSidebarNav = true
