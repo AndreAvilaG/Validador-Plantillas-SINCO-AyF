@@ -4,15 +4,12 @@
 # de otra carpeta. Streamlit lo detecta automáticamente al desplegar.
 
 [server]
-# Límite de tamaño por archivo subido, en MB. El valor por defecto de
-# Streamlit es 200 MB — demasiado permisivo para plantillas contables, que
-# normalmente pesan unos pocos MB incluso con miles de filas. 25 MB deja
-# margen amplio sin exponer la app a archivos diseñados para agotar memoria.
-maxUploadSize = 25
+# Límite de tamaño por archivo subido, en MB. Se deja en 200 (el valor por
+# defecto de Streamlit) porque hay clientes reales que manejan volúmenes
+# grandes de datos y un límite más bajo rompería su flujo de trabajo.
+maxUploadSize = 200
 
 # No mostrar detalles internos de errores (tracebacks) a los usuarios finales.
-# Con esto en false, un error inesperado muestra un mensaje genérico en vez
-# de exponer nombres de variables, rutas internas o fragmentos de datos.
 enableXsrfProtection = true
 
 [client]
