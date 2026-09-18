@@ -1,0 +1,58 @@
+name: Mantener despierta la app de Streamlit
+
+# Este workflow evita que Streamlit Community Cloud duerma la app por
+# inactividad (lo hace automáticamente a las 12 horas sin visitas reales).
+# IMPORTANTE: una simple petición (curl/wget) NO cuenta como visita real
+# para Streamlit — solo trae el "cascarón" vacío de la página sin arrancar
+# el código Python. Por eso usamos un navegador automatizado (Playwright),
+# que sí abre la app de verdad, igual que lo haría una persona.
+
+on:
+  schedule:
+    # Cada 6 horas — bien por debajo de las 12 horas que usa Streamlit Cloud
+    # para dormir una app.
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    # Permite además ejecutarlo manualmente desde la pestaña "Actions" de
+    # GitHub, sin tener que esperar al horario programado.
+
+jobs:
+  keep-awake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar Playwright (navegador automatizado)
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Visitar la app con un navegador real
+        run: |
+          cat > _visitar_app.py << 'PYEOF'
+          from playwright.sync_api import sync_playwright
+
+          URL = "https://sincopys-validador-plantillas.streamlit.app/"
+
+          with sync_playwright() as p:
+              navegador = p.chromium.launch()
+              pagina = navegador.new_page()
+              pagina.goto(URL, wait_until="domcontentloaded", timeout=120_000)
+              pagina.wait_for_timeout(5000)
+
+              # Si la app ya estaba dormida, aparece este botón — lo hacemos clic
+              boton_despertar = pagina.get_by_role("button", name="Yes, get this app back up!")
+              if boton_despertar.count() > 0:
+                  print("La app estaba dormida — despertándola...")
+                  boton_despertar.click()
+                  pagina.wait_for_timeout(60_000)
+                  print("Listo, la app debería estar despierta ahora.")
+              else:
+                  print("La app ya estaba despierta — visita registrada correctamente.")
+
+              navegador.close()
+          PYEOF
+          python _visitar_app.py
