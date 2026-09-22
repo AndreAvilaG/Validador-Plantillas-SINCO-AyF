@@ -1146,6 +1146,25 @@ def leer_modulo_trm(archivo):
     df['No. Documento']  = df.get('No. Documento', pd.Series([''] * len(df))).fillna('').astype(str)
     return info, df
 
+def _alerta_plantilla_incorrecta(nombre_plantilla):
+    """Alerta estándar cuando un archivo cargado no corresponde a la plantilla
+    esperada o no cumple con su estructura (columnas/formato). Debe usarse en
+    todos los puntos de carga de archivos del sistema, en cualquier etapa,
+    para que el mensaje sea siempre el mismo (ver validador_sinco_ayf.py,
+    misma función)."""
+    t = str(nombre_plantilla).strip()
+    for _prefijo in ('el informe de ', 'una plantilla de ', 'el ', 'la ', 'una ', 'un ', 'los ', 'las '):
+        if t.lower().startswith(_prefijo):
+            t = t[len(_prefijo):]
+            break
+    st.markdown(
+        f'<div style="background:#FEF2F2;border-left:4px solid #DC2626;border-radius:8px;'
+        f'padding:12px 16px;font-size:13.5px;color:#7F1D1D;line-height:1.6">'
+        f'<b>❌ Revisa la plantilla {t}</b><br>'
+        f'El archivo no cumple con la estructura requerida para realizar la carga.<br>'
+        f'Verifica que la plantilla tenga las columnas y el formato definidos, realiza los ajustes '
+        f'necesarios y vuelve a cargar el archivo.</div>', unsafe_allow_html=True)
+
 def leer_si(archivo):
     from openpyxl import load_workbook
     wb = load_workbook(archivo, read_only=True)
@@ -3025,7 +3044,7 @@ html,body,[class*="css"]{{font-family:'Inter','Segoe UI',sans-serif;font-size:15
                     ic,df_cxc_mod=leer_modulo(archivo_cxc); info_cliente=ic
                     if ic.get('moneda'): trm_info = ic['moneda']
         except Exception as e:
-            st.error(f'❌ Error leyendo Informe CxC: {e}')
+            _alerta_plantilla_incorrecta('Informe CxC')
             df_cxc_mod = None
 
         try:
@@ -3049,7 +3068,7 @@ html,body,[class*="css"]{{font-family:'Inter','Segoe UI',sans-serif;font-size:15
                     if not info_cliente: info_cliente=ip
                     if ip.get('moneda'): trm_info = ip['moneda']
         except Exception as e:
-            st.error(f'❌ Error leyendo Informe CxP: {e}')
+            _alerta_plantilla_incorrecta('Informe CxP')
             df_cxp_mod = None
 
         df_si_data = None
@@ -3063,7 +3082,7 @@ html,body,[class*="css"]{{font-family:'Inter','Segoe UI',sans-serif;font-size:15
                 df_si_data = leer_si(archivo_si)
                 df_si_data['_origen'] = 'SI'
             except Exception as e:
-                st.error(f'❌ Error leyendo Plantilla de Saldos Iniciales: {e}. Verifica que el archivo tenga la hoja "MIGRACION" con las columnas correctas.')
+                _alerta_plantilla_incorrecta('Saldos Iniciales')
                 df_si_data = None
 
         # Leer maestro de terceros si fue cargado
@@ -3094,16 +3113,16 @@ html,body,[class*="css"]{{font-family:'Inter','Segoe UI',sans-serif;font-size:15
                         if nk and nm and nm not in ('','nan','None'):
                             maestro_nit_map[nk] = nm
                 else:
-                    st.warning(f'Maestro de Terceros: no se encontraron las columnas "No. Identificación" y/o "Nombre". Columnas disponibles: {list(df_maestro.columns)}')
+                    _alerta_plantilla_incorrecta('Maestro de Terceros')
             except Exception as e:
-                st.warning(f'No se pudo leer el Maestro de Terceros: {e}')
+                _alerta_plantilla_incorrecta('Maestro de Terceros')
         df_mov_data = None
         if archivo_mov:
             try:
                 df_mov_data = leer_mov(archivo_mov)
                 df_mov_data['_origen'] = 'Movimientos'
             except Exception as e:
-                st.error(f'❌ Error leyendo Plantilla de Movimientos: {e}. Verifica que el archivo sea correcto y tenga la hoja "MIGRACION".')
+                _alerta_plantilla_incorrecta('Movimientos')
                 df_mov_data = None
         if df_mov_data is not None:
             df_mov_data['_origen'] = 'Movimientos'
@@ -3441,7 +3460,7 @@ html,body,[class*="css"]{{font-family:'Inter','Segoe UI',sans-serif;font-size:15
                         _m2 = _info_me2.get('moneda', moneda_me)
                         if _m2 and _m2 != 'ME': moneda_me = _m2
                 except Exception as e:
-                    st.error(f'Error leyendo archivos de moneda extranjera: {e}')
+                    _alerta_plantilla_incorrecta('Informe CxC/CxP (Moneda Extranjera)')
                     df_cxc_me = df_cxp_me = None
 
                 # Enriquecer Nombre_CC y Nombre_Cuenta desde módulos de moneda local
@@ -3458,7 +3477,7 @@ html,body,[class*="css"]{{font-family:'Inter','Segoe UI',sans-serif;font-size:15
                         df_si_me_data = leer_si(archivo_si_me)
                         df_si_me_data['_origen'] = 'SI'
                     except Exception as e:
-                        st.error(f'Error leyendo Plantilla SI (ME): {e}')
+                        _alerta_plantilla_incorrecta('Saldos Iniciales (Moneda Extranjera)')
 
                 df_mov_me_data = None
                 if archivo_mov_me:
@@ -3466,7 +3485,7 @@ html,body,[class*="css"]{{font-family:'Inter','Segoe UI',sans-serif;font-size:15
                         df_mov_me_data = leer_mov(archivo_mov_me)
                         df_mov_me_data['_origen'] = 'Movimientos'
                     except Exception as e:
-                        st.error(f'Error leyendo Plantilla Movimientos (ME): {e}')
+                        _alerta_plantilla_incorrecta('Movimientos (Moneda Extranjera)')
 
                 _bases_me = [df for df in [df_si_me_data, df_mov_me_data] if df is not None]
                 df_cont_me = pd.concat(_bases_me, ignore_index=True) if len(_bases_me) > 1 else (_bases_me[0] if _bases_me else None)
