@@ -24,6 +24,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ── Panel de seguimiento para directores ──
+# Solo se abre con el enlace especial (?panel=1). En la app normal no existe ningún botón ni mención del panel,
+# y sin ese parámetro este bloque no hace nada. Va aquí, antes de todo lo demás, para que el panel no cargue la app.
+if st.query_params.get("panel"):
+    try:
+        import panel_seguimiento as _panel_seguimiento
+    except ImportError:
+        st.error("El panel de seguimiento no está disponible en esta instalación.")
+        st.stop()
+    _panel_seguimiento.render_panel()
+    st.stop()
+
 # ── PRIMER envío al navegador ────────────────────────────────────────────────
 # En cuanto llega este primer elemento, Streamlit retira su "skeleton" de carga
 # (las barras grises). Por eso va ANTES de cualquier import pesado: oculta el
