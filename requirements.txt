@@ -1,0 +1,10 @@
+# Librerias que necesita la app (Asistente y Validador de Migracion SINCO A&F).
+# Versiones fijas, probadas juntas con Python 3.14: asi una reconstruccion del servidor no cambia nada por sorpresa.
+streamlit==1.66.1
+pandas==3.1.0
+numpy==2.5.4
+pillow==13.0.0
+openpyxl==3.1.5
+reportlab==5.1.0
+pdfplumber==0.11.10
+pytesseract==0.3.13
