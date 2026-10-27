@@ -534,8 +534,8 @@ def test_al_terminar_la_validacion_no_queda_ningun_aviso_de_espera():
 # ───────────────────────── Dependencias del servidor ─────────────────────────
 # Incidente: el servidor se reconstruyó sin instalar openpyxl ni reportlab. Leer cualquier Excel falló (toda plantilla daba «Revisa la plantilla…»)
 # y la Etapa 4 no abría (ModuleNotFoundError). Las librerías se piden en requirements.txt, en la raíz del repositorio.
-ARCHIVOS_DE_LA_APP = ("validador_sinco_ayf.py", "conciliacion.py", "seguimiento.py")
-MODULOS_PROPIOS = {"conciliacion", "seguimiento"}
+ARCHIVOS_DE_LA_APP = ("validador_sinco_ayf.py", "conciliacion.py", "seguimiento.py", "panel_seguimiento.py")
+MODULOS_PROPIOS = {"conciliacion", "seguimiento", "panel_seguimiento"}
 PAQUETE_DE_PIP = {"PIL": "pillow"}                                   # nombre al importar -> nombre en requirements.txt
 
 
