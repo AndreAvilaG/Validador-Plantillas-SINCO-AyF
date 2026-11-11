@@ -6,6 +6,8 @@ name: Mantener despierta la app de Streamlit
 # para Streamlit — solo trae el "cascarón" vacío de la página sin arrancar
 # el código Python. Por eso usamos un navegador automatizado (Playwright),
 # que sí abre la app de verdad, igual que lo haría una persona.
+#
+# Si cambia la dirección de la app, hay que cambiar SOLO la línea URL = "..." de abajo.
 
 on:
   schedule:
@@ -19,6 +21,7 @@ on:
 jobs:
   keep-awake:
     runs-on: ubuntu-latest
+    timeout-minutes: 15          # si algo se cuelga, termina a los 15 minutos (antes podía quedarse mucho más)
     steps:
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -33,15 +36,25 @@ jobs:
       - name: Visitar la app con un navegador real
         run: |
           cat > _visitar_app.py << 'PYEOF'
+          import sys
           from playwright.sync_api import sync_playwright
 
-          URL = "https://sincopys-validador-plantillas.streamlit.app/"
+          URL = "https://validador-plantillas-sinco-ayf.streamlit.app/"
 
           with sync_playwright() as p:
               navegador = p.chromium.launch()
               pagina = navegador.new_page()
-              pagina.goto(URL, wait_until="domcontentloaded", timeout=120_000)
-              pagina.wait_for_timeout(5000)
+              try:
+                  pagina.goto(URL, wait_until="domcontentloaded", timeout=120_000)
+              except Exception as e:
+                  print(f"ERROR: no se pudo abrir {URL}: {e}")
+                  print("Revisa que la dirección de la app sea correcta (línea URL de este archivo).")
+                  navegador.close()
+                  sys.exit(1)
+              pagina.wait_for_timeout(8000)
+              print("Dirección final:", pagina.url)
+              print("Título de la página:", pagina.title())
+              texto = (pagina.inner_text("body") or "").lower()
 
               # Si la app ya estaba dormida, aparece este botón — lo hacemos clic
               boton_despertar = pagina.get_by_role("button", name="Yes, get this app back up!")
@@ -50,6 +63,10 @@ jobs:
                   boton_despertar.click()
                   pagina.wait_for_timeout(60_000)
                   print("Listo, la app debería estar despierta ahora.")
+              elif "doesn't exist" in texto or "does not exist" in texto or "not found" in texto or "404" in texto:
+                  print("ERROR: Streamlit dice que esa app no existe. La dirección URL de este archivo es incorrecta o la app fue eliminada.")
+                  navegador.close()
+                  sys.exit(1)
               else:
                   print("La app ya estaba despierta — visita registrada correctamente.")
 
